@@ -4,6 +4,8 @@ package info.kgeorgiy.ja.monakhov.walk;
 import java.io.*;
 import java.nio.file.*;
 
+// :NOTE: Отсутствовал при проверке
+// :NOTE: Пролемы с пакетами
 public class Walk {
     private String inputFileName;
     private String outputFileName;
