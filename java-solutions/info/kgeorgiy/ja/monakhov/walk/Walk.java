@@ -2,11 +2,7 @@ package info.kgeorgiy.ja.monakhov.walk;
 
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
+import java.nio.file.*;
 
 public class Walk {
     private String inputFileName;
@@ -17,17 +13,18 @@ public class Walk {
         this.outputFileName = outputFileName;
     }
 
-    public static void main(String[] args) {
-        try {
-            Walk walk = new Walk(args[0], args[1]);
-            walk.walk();
-        } catch (WalkException e) {
-            System.err.println(e.getMessage());
-        }
-    }
-
     private void walk() throws WalkException {
-        Path inputFilePath = Path.of(inputFileName), outputFilePath = Path.of(outputFileName);
+        Path inputFilePath, outputFilePath;
+        try {
+            inputFilePath = Path.of(inputFileName);
+        } catch (InvalidPathException e) {
+            throw new WalkException("Unsupported symbol in path to input file", e);
+        }
+        try {
+            outputFilePath = Path.of(outputFileName);
+        } catch (InvalidPathException e) {
+            throw new WalkException("Unsupported symbol in path to output file", e);
+        }
 
         Path outputDirectory = outputFilePath.getParent();
         if (outputDirectory != null) {
@@ -60,7 +57,7 @@ public class Walk {
         return "output file";
     }
 
-    private String getHash(String fileName) {
+    private String getHash(String fileName) throws WalkException {
         int buffSize = 4096;
         byte[] buff = new byte[buffSize];
         long hash = 0L;
@@ -78,9 +75,22 @@ public class Walk {
                     }
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | InvalidPathException e) {
             hash = 0L;
         }
         return String.format("%016x", hash);
+    }
+
+    public static void main(String[] args) {
+        if (args == null || args.length != 2 || args[0] == null || args[1] == null) {
+            System.err.println("Wrong arguments");
+        } else {
+            try {
+                Walk walk = new Walk(args[0], args[1]);
+                walk.walk();
+            } catch (WalkException e) {
+                System.err.println(e.getMessage());
+            }
+        }
     }
 }
