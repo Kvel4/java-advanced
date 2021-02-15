@@ -1,7 +1,10 @@
 package info.kgeorgiy.ja.monakhov.walk;
 
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 
 public class Walk {
@@ -13,49 +16,63 @@ public class Walk {
         this.outputFileName = outputFileName;
     }
 
+    public static void main(final String[] args) {
+        if (args == null) {
+            System.err.println("You must pass arguments to program");
+        } else if (args.length != 2) {
+            System.err.println("Arguments size must be 2");
+        } else if (args[0] == null || args[1] == null) {
+            System.err.println("Arguments can't be null");
+        } else {
+            try {
+                new Walk(args[0], args[1]).walk();
+            } catch (final WalkException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+    }
+
     private void walk() throws WalkException {
-        final Path inputFilePath;
+        final Path inputFilePath, outputFilePath;
+        String fileTitle = "input file";
         try {
             inputFilePath = Path.of(inputFileName);
-        } catch (final InvalidPathException e) {
-            throw new WalkException("Unsupported symbol in path to input file", e);
-        }
-        // :NOTE: копипаста
-        final Path outputFilePath;
-        try {
+            fileTitle = "output file";
             outputFilePath = Path.of(outputFileName);
         } catch (final InvalidPathException e) {
-            throw new WalkException("Unsupported symbol in path to output file", e);
+            throw new WalkException("Unsupported symbol in path to " + fileTitle, e);
         }
 
         final Path outputDirectory = outputFilePath.getParent();
         if (outputDirectory != null) {
             try {
                 Files.createDirectories(outputDirectory);
-            } catch (final IOException e) {
-                throw new WalkException("Unable to create output directory", e);
+            } catch (IOException ignored) {
             }
         }
 
-        try (final BufferedReader inputFileReader = Files.newBufferedReader(inputFilePath);
-             final BufferedWriter outputFileWriter = Files.newBufferedWriter(outputFilePath)) {
-            String fileName;
-            while ((fileName = inputFileReader.readLine()) != null) {
-                outputFileWriter.write(getHash(fileName) + " " + fileName);
-                outputFileWriter.newLine();
+
+        fileTitle = "input file";
+        try (final BufferedReader inputFileReader = Files.newBufferedReader(inputFilePath)) {
+            try (final BufferedWriter outputFileWriter = Files.newBufferedWriter(outputFilePath)) {
+                String fileName;
+                while ((fileName = inputFileReader.readLine()) != null) {
+                    outputFileWriter.write(getHash(fileName) + " " + fileName);
+                    outputFileWriter.newLine();
+                }
+            } catch (NoSuchFileException e) {
+                throw new WalkException("Unable to create output file", e);
+            } catch (IOException e) {
+                fileTitle = "output file";
+                throw e;
             }
         } catch (final NoSuchFileException e) {
-            throw new WalkException(getFileTitle(e) + " doesn't exist", e);
+            throw new WalkException("input file doesn't exist", e);
         } catch (final AccessDeniedException e) {
-            throw new WalkException("You have no access to " + getFileTitle(e), e);
+            throw new WalkException("You have no access to " + fileTitle, e);
         } catch (final IOException e) {
-            // :NOTE: Подробности
-            throw new WalkException("Some errors occurred while processing input/output file" , e);
+            throw new WalkException("Some errors occurred while processing " + fileTitle, e);
         }
-    }
-
-    private String getFileTitle(final FileSystemException e) {
-        return e.getFile().equals(inputFileName) ? "input file" : "output file";
     }
 
     private String getHash(final String fileName) {
@@ -79,21 +96,5 @@ public class Walk {
             hash = 0;
         }
         return String.format("%016x", hash);
-    }
-
-    public static void main(final String[] args) {
-        if (args == null) {
-            System.err.println("You must pass arguments to program");
-        } else if (args.length != 2) {
-            System.err.println("Arguments size must be 2");
-        } else if (args[0] == null || args[1] == null) {
-            System.err.println("Arguments can't be null");
-        } else {
-            try {
-                new Walk(args[0], args[1]).walk();
-            } catch (final WalkException e) {
-                System.err.println(e.getMessage());
-            }
-        }
     }
 }
