@@ -47,17 +47,17 @@ public class Walk {
         } catch (AccessDeniedException e) {
             throw new WalkException("You have no access to " + getFileTitle(e), e);
         } catch (IOException e) {
-            throw new WalkException("Some errors occurred while processing " + getFileTitle(e), e);
+            throw new WalkException("Some errors occurred while processing input/output file" , e);
         }
     }
 
-    private String getFileTitle(IOException e) {
-        String fileName = e.getMessage().split(" ")[0];
+    private String getFileTitle(FileSystemException e) {
+        String fileName = e.getFile();
         if (fileName.equals(inputFileName)) return "input file";
         return "output file";
     }
 
-    private String getHash(String fileName) throws WalkException {
+    private String getHash(String fileName) {
         int buffSize = 4096;
         byte[] buff = new byte[buffSize];
         long hash = 0L;
@@ -82,8 +82,12 @@ public class Walk {
     }
 
     public static void main(String[] args) {
-        if (args == null || args.length != 2 || args[0] == null || args[1] == null) {
-            System.err.println("Wrong arguments");
+        if (args == null) {
+            System.err.println("You must pass arguments to program");
+        } else if (args.length != 2) {
+            System.err.println("Arguments size must be 2");
+        } else if (args[0] == null || args[1] == null) {
+            System.err.println("Arguments can't be null");
         } else {
             try {
                 Walk walk = new Walk(args[0], args[1]);
