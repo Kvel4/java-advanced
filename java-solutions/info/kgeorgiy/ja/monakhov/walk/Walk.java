@@ -5,83 +5,83 @@ import java.io.*;
 import java.nio.file.*;
 
 public class Walk {
-    private String inputFileName;
-    private String outputFileName;
+    private final String inputFileName;
+    private final String outputFileName;
 
-    private Walk(String inputFileName, String outputFileName) {
+    private Walk(final String inputFileName, final String outputFileName) {
         this.inputFileName = inputFileName;
         this.outputFileName = outputFileName;
     }
 
     private void walk() throws WalkException {
-        Path inputFilePath, outputFilePath;
+        final Path inputFilePath;
         try {
             inputFilePath = Path.of(inputFileName);
-        } catch (InvalidPathException e) {
+        } catch (final InvalidPathException e) {
             throw new WalkException("Unsupported symbol in path to input file", e);
         }
+        // :NOTE: копипаста
+        final Path outputFilePath;
         try {
             outputFilePath = Path.of(outputFileName);
-        } catch (InvalidPathException e) {
+        } catch (final InvalidPathException e) {
             throw new WalkException("Unsupported symbol in path to output file", e);
         }
 
-        Path outputDirectory = outputFilePath.getParent();
+        final Path outputDirectory = outputFilePath.getParent();
         if (outputDirectory != null) {
             try {
                 Files.createDirectories(outputDirectory);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new WalkException("Unable to create output directory", e);
             }
         }
 
-        try (BufferedReader inputFileReader = Files.newBufferedReader(inputFilePath);
-             BufferedWriter outputFileWriter = Files.newBufferedWriter(outputFilePath)) {
+        try (final BufferedReader inputFileReader = Files.newBufferedReader(inputFilePath);
+             final BufferedWriter outputFileWriter = Files.newBufferedWriter(outputFilePath)) {
             String fileName;
             while ((fileName = inputFileReader.readLine()) != null) {
                 outputFileWriter.write(getHash(fileName) + " " + fileName);
                 outputFileWriter.newLine();
             }
-        } catch (NoSuchFileException e) {
+        } catch (final NoSuchFileException e) {
             throw new WalkException(getFileTitle(e) + " doesn't exist", e);
-        } catch (AccessDeniedException e) {
+        } catch (final AccessDeniedException e) {
             throw new WalkException("You have no access to " + getFileTitle(e), e);
-        } catch (IOException e) {
+        } catch (final IOException e) {
+            // :NOTE: Подробности
             throw new WalkException("Some errors occurred while processing input/output file" , e);
         }
     }
 
-    private String getFileTitle(FileSystemException e) {
-        String fileName = e.getFile();
-        if (fileName.equals(inputFileName)) return "input file";
-        return "output file";
+    private String getFileTitle(final FileSystemException e) {
+        return e.getFile().equals(inputFileName) ? "input file" : "output file";
     }
 
-    private String getHash(String fileName) {
-        int buffSize = 4096;
-        byte[] buff = new byte[buffSize];
-        long hash = 0L;
-        long highBits = 0xFF00000000000000L;
+    private String getHash(final String fileName) {
+        final byte[] buff = new byte[4096];
+        long hash = 0;
+        final long highBits = 0xFF00000000000000L;
 
-        try (InputStream fileReader = Files.newInputStream(Path.of(fileName))) {
+        try (final InputStream fileReader = Files.newInputStream(Path.of(fileName))) {
             int amn;
             while ((amn = fileReader.read(buff)) != -1) {
                 for (int i = 0; i < amn; i++) {
                     hash = (hash << 8) + (buff[i] & 0xff);
-                    long high = hash & highBits;
+                    final long high = hash & highBits;
                     if (high != 0) {
                         hash ^= high >> 48;
                         hash &= ~high;
                     }
                 }
             }
-        } catch (IOException | InvalidPathException e) {
-            hash = 0L;
+        } catch (final IOException | InvalidPathException e) {
+            hash = 0;
         }
         return String.format("%016x", hash);
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         if (args == null) {
             System.err.println("You must pass arguments to program");
         } else if (args.length != 2) {
@@ -90,9 +90,8 @@ public class Walk {
             System.err.println("Arguments can't be null");
         } else {
             try {
-                Walk walk = new Walk(args[0], args[1]);
-                walk.walk();
-            } catch (WalkException e) {
+                new Walk(args[0], args[1]).walk();
+            } catch (final WalkException e) {
                 System.err.println(e.getMessage());
             }
         }
