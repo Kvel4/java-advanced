@@ -1,4 +1,4 @@
-package info.kgeorgiy.ja.monakhovWalk.walk;
+package info.kgeorgiy.ja.monakhov.walk;
 
 public class RecursiveWalk {
 }
