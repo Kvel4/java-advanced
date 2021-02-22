@@ -34,6 +34,7 @@ public class Walk {
 
     private void walk() throws WalkException {
         final Path inputFilePath, outputFilePath;
+        // :NOTE: Функция?
         String fileTitle = "input file";
         try {
             inputFilePath = Path.of(inputFileName);
@@ -47,7 +48,7 @@ public class Walk {
         if (outputDirectory != null) {
             try {
                 Files.createDirectories(outputDirectory);
-            } catch (IOException ignored) {
+            } catch (final IOException ignored) {
             }
         }
 
@@ -56,13 +57,14 @@ public class Walk {
         try (final BufferedReader inputFileReader = Files.newBufferedReader(inputFilePath)) {
             try (final BufferedWriter outputFileWriter = Files.newBufferedWriter(outputFilePath)) {
                 String fileName;
+                // :NOTE: Неверное сообщение
                 while ((fileName = inputFileReader.readLine()) != null) {
                     outputFileWriter.write(getHash(fileName) + " " + fileName);
                     outputFileWriter.newLine();
                 }
-            } catch (NoSuchFileException e) {
+            } catch (final NoSuchFileException e) {
                 throw new WalkException("Unable to create output file", e);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 fileTitle = "output file";
                 throw e;
             }
