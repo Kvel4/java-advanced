@@ -1,15 +1,13 @@
 package info.kgeorgiy.ja.monakhov.walk;
 
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.*;
 
 public class Walk {
     private final String inputFileName;
     private final String outputFileName;
+    private String fileTitle;
 
     private Walk(final String inputFileName, final String outputFileName) {
         this.inputFileName = inputFileName;
@@ -34,11 +32,11 @@ public class Walk {
 
     private void walk() throws WalkException {
         final Path inputFilePath, outputFilePath;
-        // :NOTE: Функция?
-        String fileTitle = "input file";
+
+        setFileTitle("input file");
         try {
             inputFilePath = Path.of(inputFileName);
-            fileTitle = "output file";
+            setFileTitle("output file");
             outputFilePath = Path.of(outputFileName);
         } catch (final InvalidPathException e) {
             throw new WalkException("Unsupported symbol in path to " + fileTitle, e);
@@ -48,33 +46,35 @@ public class Walk {
         if (outputDirectory != null) {
             try {
                 Files.createDirectories(outputDirectory);
-            } catch (final IOException ignored) {
-            }
+            } catch (final IOException ignored) { }
         }
 
-
-        fileTitle = "input file";
+        setFileTitle("input file");
         try (final BufferedReader inputFileReader = Files.newBufferedReader(inputFilePath)) {
+            setFileTitle("output file");
             try (final BufferedWriter outputFileWriter = Files.newBufferedWriter(outputFilePath)) {
                 String fileName;
-                // :NOTE: Неверное сообщение
+                setFileTitle("input file");
                 while ((fileName = inputFileReader.readLine()) != null) {
+                    setFileTitle("output file");
                     outputFileWriter.write(getHash(fileName) + " " + fileName);
                     outputFileWriter.newLine();
+                    setFileTitle("input file");
                 }
             } catch (final NoSuchFileException e) {
                 throw new WalkException("Unable to create output file", e);
-            } catch (final IOException e) {
-                fileTitle = "output file";
-                throw e;
             }
         } catch (final NoSuchFileException e) {
-            throw new WalkException("input file doesn't exist", e);
+            throw new WalkException("Input file doesn't exist", e);
         } catch (final AccessDeniedException e) {
             throw new WalkException("You have no access to " + fileTitle, e);
         } catch (final IOException e) {
             throw new WalkException("Some errors occurred while processing " + fileTitle, e);
         }
+    }
+
+    private void setFileTitle(String file) {
+        fileTitle = file;
     }
 
     private String getHash(final String fileName) {
