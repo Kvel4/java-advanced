@@ -1,7 +1,6 @@
 package info.kgeorgiy.ja.monakhov.walk;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
@@ -44,16 +43,6 @@ public class WalkFileVisitor extends SimpleFileVisitor<Path> {
     @Override
     public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
         write(0, file);
-        return FileVisitResult.CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-        try(var stream = Files.list(dir)) {
-            if (!stream.iterator().hasNext()) {
-                write(0, dir);
-            }
-        }
         return FileVisitResult.CONTINUE;
     }
 
