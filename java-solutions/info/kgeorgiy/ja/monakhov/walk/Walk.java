@@ -38,8 +38,10 @@ public class Walk {
     private void walk() throws WalkException {
         final Path inputFilePath, outputFilePath;
 
+        // :NOTE: Функция
         setFileTitle("input file");
         try {
+//            inputFilePath = path(inputFileName, "input file");
             inputFilePath = Path.of(inputFileName);
             setFileTitle("output file");
             outputFilePath = Path.of(outputFileName);
@@ -71,11 +73,11 @@ public class Walk {
         }
     }
 
-    private void setFileTitle(String file) {
+    private void setFileTitle(final String file) {
         fileTitle = file;
     }
 
-    private String getHash(final String fileName) {
+    private static String getHash(final String fileName) {
         final byte[] buff = new byte[4096];
         long hash = 0;
         final long highBits = 0xFF00000000000000L;
