@@ -79,7 +79,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
     }
 
     private void checkNonEmpty() {
-        if (list.size() == 0) throw new NoSuchElementException("Set is empty");
+        if (list.isEmpty()) throw new NoSuchElementException("Set is empty");
     }
 
     private int find(E element) {
