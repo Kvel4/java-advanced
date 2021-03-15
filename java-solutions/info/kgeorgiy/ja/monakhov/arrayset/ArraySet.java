@@ -22,6 +22,11 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
         list = new ArrayList<>(treeSet);
     }
 
+    private ArraySet(Comparator<? super E> comparator, List<E> view) {
+        list = view;
+        this.comparator = comparator;
+    }
+
     @Override
     public Iterator<E> iterator() {
         return Collections.unmodifiableList(list).iterator();
@@ -44,6 +49,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
         }
         return subSet(find(fromElement), find(toElement));
     }
+
 
     @Override
     public ArraySet<E> headSet(E toElement) {
@@ -73,7 +79,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
     }
 
     private void checkNonEmpty() {
-        if (list.isEmpty()) throw new NoSuchElementException("Set must be non empty");
+        if (list.size() == 0) throw new NoSuchElementException("Set is empty");
     }
 
     private int find(E element) {
@@ -85,8 +91,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
         return Collections.binarySearch(list, Objects.requireNonNull(element), comparator);
     }
 
-    // :NOTE: optimize asymptotic, it's O(n log n)
     private ArraySet<E> subSet(int from, int to) {
-        return new ArraySet<E>(list.subList(from, to), comparator);
+        return new ArraySet<>(comparator, list.subList(from, to));
     }
 }
