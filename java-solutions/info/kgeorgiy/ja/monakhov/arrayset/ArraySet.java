@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.SortedSet;
 
 public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
-    private List<E> list;
+    private final List<E> list;
     private Comparator<? super E> comparator;
 
     public ArraySet(){
@@ -73,7 +73,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
     }
 
     private void checkNonEmpty() {
-        if (list.size() == 0) throw new NoSuchElementException("Set must be non empty");
+        if (list.isEmpty()) throw new NoSuchElementException("Set must be non empty");
     }
 
     private int find(E element) {
@@ -85,6 +85,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E> {
         return Collections.binarySearch(list, Objects.requireNonNull(element), comparator);
     }
 
+    // :NOTE: optimize asymptotic, it's O(n log n)
     private ArraySet<E> subSet(int from, int to) {
         return new ArraySet<E>(list.subList(from, to), comparator);
     }
