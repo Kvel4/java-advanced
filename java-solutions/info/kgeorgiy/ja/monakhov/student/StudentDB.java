@@ -18,65 +18,66 @@ public class StudentDB implements StudentQuery {
             .thenComparing(Student::getId);
 
     @Override
-    public List<String> getFirstNames(List<Student> students) {
+    public List<String> getFirstNames(final List<Student> students) {
         return mappedCollection(students, Student::getFirstName, ArrayList::new);
     }
 
     @Override
-    public List<String> getLastNames(List<Student> students) {
+    public List<String> getLastNames(final List<Student> students) {
         return mappedCollection(students, Student::getLastName, ArrayList::new);
     }
 
     @Override
-    public List<GroupName> getGroups(List<Student> students) {
+    public List<GroupName> getGroups(final List<Student> students) {
         return mappedCollection(students, Student::getGroup, ArrayList::new);
     }
 
     @Override
-    public List<String> getFullNames(List<Student> students) {
+    public List<String> getFullNames(final List<Student> students) {
         return mappedCollection(students, student -> student.getFirstName() + " " + student.getLastName(), ArrayList::new);
     }
 
     @Override
-    public Set<String> getDistinctFirstNames(List<Student> students) {
+    public Set<String> getDistinctFirstNames(final List<Student> students) {
         return mappedCollection(students, Student::getFirstName, TreeSet::new);
     }
 
 
     @Override
-    public String getMaxStudentFirstName(List<Student> students) {
+    public String getMaxStudentFirstName(final List<Student> students) {
         return students.stream().max(Student::compareTo).map(Student::getFirstName).orElse("");
     }
 
 
     @Override
-    public List<Student> sortStudentsById(Collection<Student> students) {
+    public List<Student> sortStudentsById(final Collection<Student> students) {
         return sortedList(students, Student::compareTo);
     }
 
     @Override
-    public List<Student> sortStudentsByName(Collection<Student> students) {
+    public List<Student> sortStudentsByName(final Collection<Student> students) {
         return sortedList(students, NAME_ORDER);
     }
 
 
+    // :NOTE: Дублирование
     @Override
-    public List<Student> findStudentsByFirstName(Collection<Student> students, String name) {
+    public List<Student> findStudentsByFirstName(final Collection<Student> students, final String name) {
         return filteredAndSortedList(students, student -> student.getFirstName().equals(name));
     }
 
     @Override
-    public List<Student> findStudentsByLastName(Collection<Student> students, String name) {
+    public List<Student> findStudentsByLastName(final Collection<Student> students, final String name) {
         return filteredAndSortedList(students, student -> student.getLastName().equals(name));
     }
 
     @Override
-    public List<Student> findStudentsByGroup(Collection<Student> students, GroupName group) {
+    public List<Student> findStudentsByGroup(final Collection<Student> students, final GroupName group) {
         return filteredAndSortedList(students, student -> student.getGroup().equals(group));
     }
 
     @Override
-    public Map<String, String> findStudentNamesByGroup(Collection<Student> students, GroupName group) {
+    public Map<String, String> findStudentNamesByGroup(final Collection<Student> students, final GroupName group) {
         return students.stream()
                 .filter(g -> g.getGroup().equals(group))
                 .collect(Collectors.toMap(
@@ -85,15 +86,15 @@ public class StudentDB implements StudentQuery {
                         BinaryOperator.minBy(String::compareTo)));
     }
 
-    private <T, C extends Collection<T>> C mappedCollection(Collection<Student> students, Function<Student, T> mapper, Supplier<C> collector) {
+    private static <T, C extends Collection<T>> C mappedCollection(final Collection<Student> students, final Function<Student, T> mapper, final Supplier<C> collector) {
         return students.stream().map(mapper).collect(Collectors.toCollection(collector));
     }
 
-    private List<Student> sortedList(Collection<Student> students, Comparator<Student> comparator) {
+    private static List<Student> sortedList(final Collection<Student> students, final Comparator<Student> comparator) {
         return students.stream().sorted(comparator).collect(Collectors.toList());
     }
 
-    private List<Student> filteredAndSortedList(Collection<Student> students, Predicate<? super Student> filter) {
+    private static List<Student> filteredAndSortedList(final Collection<Student> students, final Predicate<? super Student> filter) {
         return students.stream().filter(filter).sorted(NAME_ORDER).collect(Collectors.toList());
     }
 }
