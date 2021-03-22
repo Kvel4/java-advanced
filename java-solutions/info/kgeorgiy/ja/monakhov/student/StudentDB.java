@@ -17,24 +17,26 @@ public class StudentDB implements StudentQuery {
             .thenComparing(Student::getFirstName, Comparator.reverseOrder())
             .thenComparing(Student::getId);
 
+    private static final Comparator<Student> ID_ORDER = Student::compareTo;
+
     @Override
     public List<String> getFirstNames(final List<Student> students) {
-        return mappedCollection(students, Student::getFirstName, ArrayList::new);
+        return mappedList(students, Student::getFirstName);
     }
 
     @Override
     public List<String> getLastNames(final List<Student> students) {
-        return mappedCollection(students, Student::getLastName, ArrayList::new);
+        return mappedList(students, Student::getLastName);
     }
 
     @Override
     public List<GroupName> getGroups(final List<Student> students) {
-        return mappedCollection(students, Student::getGroup, ArrayList::new);
+        return mappedList(students, Student::getGroup);
     }
 
     @Override
     public List<String> getFullNames(final List<Student> students) {
-        return mappedCollection(students, student -> student.getFirstName() + " " + student.getLastName(), ArrayList::new);
+        return mappedList(students, student -> student.getFirstName() + " " + student.getLastName());
     }
 
     @Override
@@ -45,13 +47,13 @@ public class StudentDB implements StudentQuery {
 
     @Override
     public String getMaxStudentFirstName(final List<Student> students) {
-        return students.stream().max(Student::compareTo).map(Student::getFirstName).orElse("");
+        return students.stream().max(ID_ORDER).map(Student::getFirstName).orElse("");
     }
 
 
     @Override
     public List<Student> sortStudentsById(final Collection<Student> students) {
-        return sortedList(students, Student::compareTo);
+        return sortedList(students, ID_ORDER);
     }
 
     @Override
@@ -63,17 +65,17 @@ public class StudentDB implements StudentQuery {
     // :NOTE: Дублирование
     @Override
     public List<Student> findStudentsByFirstName(final Collection<Student> students, final String name) {
-        return filteredAndSortedList(students, student -> student.getFirstName().equals(name));
+        return filteredAndSortedList(students, lambdaTemplate(Student::getFirstName, name));
     }
 
     @Override
     public List<Student> findStudentsByLastName(final Collection<Student> students, final String name) {
-        return filteredAndSortedList(students, student -> student.getLastName().equals(name));
+        return filteredAndSortedList(students, lambdaTemplate(Student::getLastName, name));
     }
 
     @Override
     public List<Student> findStudentsByGroup(final Collection<Student> students, final GroupName group) {
-        return filteredAndSortedList(students, student -> student.getGroup().equals(group));
+        return filteredAndSortedList(students, lambdaTemplate(Student::getGroup, group));
     }
 
     @Override
@@ -86,8 +88,16 @@ public class StudentDB implements StudentQuery {
                         BinaryOperator.minBy(String::compareTo)));
     }
 
+    private <T> Predicate<? super Student> lambdaTemplate(Function<Student, T> filter, T t) {
+        return student -> filter.apply(student).equals(t);
+    }
+
     private static <T, C extends Collection<T>> C mappedCollection(final Collection<Student> students, final Function<Student, T> mapper, final Supplier<C> collector) {
         return students.stream().map(mapper).collect(Collectors.toCollection(collector));
+    }
+
+    private static <T> List<T> mappedList(final Collection<Student> students, final Function<Student, T> mapper) {
+        return mappedCollection(students, mapper, ArrayList::new);
     }
 
     private static List<Student> sortedList(final Collection<Student> students, final Comparator<Student> comparator) {
