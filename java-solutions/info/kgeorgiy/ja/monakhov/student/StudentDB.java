@@ -65,18 +65,20 @@ public class StudentDB implements StudentQuery {
     // :NOTE: Дублирование
     @Override
     public List<Student> findStudentsByFirstName(final Collection<Student> students, final String name) {
-        return filteredAndSortedList(students, lambdaTemplate(Student::getFirstName, name));
+        return filteredAndSortedList(students, Student::getFirstName, name);
     }
 
     @Override
     public List<Student> findStudentsByLastName(final Collection<Student> students, final String name) {
-        return filteredAndSortedList(students, lambdaTemplate(Student::getLastName, name));
+        return filteredAndSortedList(students, Student::getLastName, name);
     }
 
     @Override
     public List<Student> findStudentsByGroup(final Collection<Student> students, final GroupName group) {
-        return filteredAndSortedList(students, lambdaTemplate(Student::getGroup, group));
+        return filteredAndSortedList(students, Student::getGroup, group);
     }
+
+
 
     @Override
     public Map<String, String> findStudentNamesByGroup(final Collection<Student> students, final GroupName group) {
@@ -88,7 +90,7 @@ public class StudentDB implements StudentQuery {
                         BinaryOperator.minBy(String::compareTo)));
     }
 
-    private <T> Predicate<? super Student> lambdaTemplate(Function<Student, T> filter, T t) {
+    private static <T> Predicate<? super Student> lambdaTemplate(Function<Student, T> filter, T t) {
         return student -> filter.apply(student).equals(t);
     }
 
@@ -106,5 +108,9 @@ public class StudentDB implements StudentQuery {
 
     private static List<Student> filteredAndSortedList(final Collection<Student> students, final Predicate<? super Student> filter) {
         return students.stream().filter(filter).sorted(NAME_ORDER).collect(Collectors.toList());
+    }
+
+    private static <T> List<Student> filteredAndSortedList(final Collection<Student> students, Function<Student, T> filter, T t) {
+        return filteredAndSortedList(students, lambdaTemplate(filter, t));
     }
 }
