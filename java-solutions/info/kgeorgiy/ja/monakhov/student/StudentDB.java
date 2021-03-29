@@ -61,7 +61,6 @@ public class StudentDB implements StudentQuery {
     }
 
 
-    // :NOTE: Дублирование
     @Override
     public List<Student> findStudentsByFirstName(final Collection<Student> students, final String name) {
         return filteredAndSortedList(students, Student::getFirstName, name);
@@ -75,6 +74,12 @@ public class StudentDB implements StudentQuery {
     @Override
     public List<Student> findStudentsByGroup(final Collection<Student> students, final GroupName group) {
         return filteredAndSortedList(students, Student::getGroup, group);
+    }
+
+    private static <T> List<Student> filteredAndSortedList(final Collection<Student> students, final Function<Student, T> filter, final T t) {
+        return students.stream().filter(student -> filter.apply(student).equals(t))
+                .sorted(NAME_ORDER)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -97,9 +102,5 @@ public class StudentDB implements StudentQuery {
 
     private static List<Student> sortedList(final Collection<Student> students, final Comparator<Student> comparator) {
         return students.stream().sorted(comparator).collect(Collectors.toList());
-    }
-
-    private static <T> List<Student> filteredAndSortedList(final Collection<Student> students, Function<Student, T> filter, T t) {
-        return students.stream().filter(student -> filter.apply(student).equals(t)).sorted(NAME_ORDER).collect(Collectors.toList());
     }
 }
