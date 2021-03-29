@@ -2,11 +2,15 @@ package info.kgeorgiy.ja.monakhov.implementor;
 
 import info.kgeorgiy.java.advanced.implementor.Impler;
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
+import info.kgeorgiy.java.advanced.implementor.JarImpler;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.*;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -14,10 +18,90 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
 
-public class Implementor implements Impler {
+public class Implementor implements Impler, JarImpler {
     private final static String JAVA = ".java";
+
+    private Path packagePath(Class<?> token, Path root) {
+        String packageName = token.getPackageName().replace(".", File.separator);
+        Path dir = root.resolve(packageName);
+
+        try {
+            Files.createDirectories(dir);
+        } catch (final IOException ignored) {
+        }
+
+        return dir;
+    }
+
+    private Path filePath(Class<?> token, Path root, String suffix) {
+        return packagePath(token, root).resolve(token.getSimpleName() + "Impl" + suffix);
+    }
+
+    private Path classFilePath(Class<?> token, Path root) {
+        return filePath(token, root, ".class");
+    }
+
+    private Path javaFilePath(Class<?> token, Path root) {
+        return filePath(token, root, ".java");
+    }
+
+    private String jarPackagePath(Class<?> token) {
+        return token.getPackageName().replace(".", "/") + "/";
+    }
+
+    @Override
+    public void implementJar(final Class<?> token, final Path jarFile) throws ImplerException {
+        try {
+            Path dir = Files.createTempDirectory(null);
+            implement(token, dir);
+
+            JarOutputStream jarOutputStream = new JarOutputStream(Files.newOutputStream(jarFile));
+            jarOutputStream.putNextEntry(new ZipEntry(jarPackagePath(token) + token.getSimpleName() + "Impl.class"));
+
+            compile(token, dir);
+            Path file = classFilePath(token, dir);
+            Files.copy(file, jarOutputStream);
+            jarOutputStream.close();
+
+
+        } catch (IOException | URISyntaxException e) {
+            throw new ImplerException("blablabla");
+        }
+    }
+
+    private void compile(Class<?> token, Path root) throws URISyntaxException, ImplerException {
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
+//        final String[] args = Stream.concat(files.stream(), Stream.of("-cp", classpath)).toArray(String[]::new);
+
+        String[] args = new String[]{
+                "-cp",
+                Path.of(token.getProtectionDomain().getCodeSource().getLocation().toURI()).toString(),
+                javaFilePath(token, root).toString()
+        };
+        if (compiler.run(null, null, null, args) != 0) {
+            throw new ImplerException("Unable to compile class");
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
@@ -31,7 +115,7 @@ public class Implementor implements Impler {
     }
 
     private static Path generateFilePath(ImplementorInstance instance, Path root) {
-        String packageName = instance.getToken().getPackageName().replace('.', File.separatorChar);
+        String packageName = instance.getToken().getPackageName().replace(".", File.separator);
         Path dir = root.resolve(packageName);
 
         try {
