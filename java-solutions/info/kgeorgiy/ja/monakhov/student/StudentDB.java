@@ -7,7 +7,6 @@ import info.kgeorgiy.java.advanced.student.StudentQuery;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -78,8 +77,6 @@ public class StudentDB implements StudentQuery {
         return filteredAndSortedList(students, Student::getGroup, group);
     }
 
-
-
     @Override
     public Map<String, String> findStudentNamesByGroup(final Collection<Student> students, final GroupName group) {
         return students.stream()
@@ -88,10 +85,6 @@ public class StudentDB implements StudentQuery {
                         Student::getLastName,
                         Student::getFirstName,
                         BinaryOperator.minBy(String::compareTo)));
-    }
-
-    private static <T> Predicate<? super Student> lambdaTemplate(Function<Student, T> filter, T t) {
-        return student -> filter.apply(student).equals(t);
     }
 
     private static <T, C extends Collection<T>> C mappedCollection(final Collection<Student> students, final Function<Student, T> mapper, final Supplier<C> collector) {
@@ -106,11 +99,7 @@ public class StudentDB implements StudentQuery {
         return students.stream().sorted(comparator).collect(Collectors.toList());
     }
 
-    private static List<Student> filteredAndSortedList(final Collection<Student> students, final Predicate<? super Student> filter) {
-        return students.stream().filter(filter).sorted(NAME_ORDER).collect(Collectors.toList());
-    }
-
     private static <T> List<Student> filteredAndSortedList(final Collection<Student> students, Function<Student, T> filter, T t) {
-        return filteredAndSortedList(students, lambdaTemplate(filter, t));
+        return students.stream().filter(student -> filter.apply(student).equals(t)).sorted(NAME_ORDER).collect(Collectors.toList());
     }
 }
