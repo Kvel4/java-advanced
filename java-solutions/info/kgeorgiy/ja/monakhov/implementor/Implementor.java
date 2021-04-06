@@ -165,7 +165,7 @@ public class Implementor implements JarImpler {
      * @return {@link Path} to created directory. Path can not exist if you don't have enough rights
      */
     private static Path createPackageDirectory(final Class<?> token, final Path root) {
-        final String packageName = token.getPackageName().replace(".", File.separator);
+        final String packageName = token.getPackageName().replace(".", "/");
         final Path dir = root.resolve(packageName);
 
         try {
@@ -214,6 +214,20 @@ public class Implementor implements JarImpler {
      */
     private static String pathInsideJar(final Class<?> token) {
         return classFilePath(token, Path.of("")).toString().replace(File.separator, "/");
+    }
+
+    /**
+     * Transform {@code string} to unicode representation.
+     * @param string {@link String} to transform
+     * @return unicode {@code string}
+     */
+    private static String toUnicode(final String string) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < string.length(); i++) {
+            final char symbol = string.charAt(i);
+            stringBuilder.append(symbol < 128 ? symbol : "\\u" + String.format("%04x", (int) symbol));
+        }
+        return stringBuilder.toString();
     }
 
     /**
@@ -302,7 +316,7 @@ public class Implementor implements JarImpler {
          * @return {@link String} represents implemented file
          */
         private String generateFile() {
-            return generatePackage() + generateClass();
+            return toUnicode(generatePackage() + generateClass());
         }
 
         /**
