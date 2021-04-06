@@ -1,0 +1,3 @@
+Main-Class: info.kgeorgiy.ja.monakhov.implementor.Implementor
+Implementation-Vendor: Daniil Monakhov
+Class-Path: info.kgeorgiy.java.advanced.implementor
