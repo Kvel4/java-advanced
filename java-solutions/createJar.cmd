@@ -1,9 +1,9 @@
-SET impl=modules\info.kgeorgiy.ja.monakhov.implementor\info\kgeorgiy\ja\monakhov\implementor\
-SET dep=modules\info.kgeorgiy.java.advanced.implementor\info\kgeorgiy\java\advanced\implementor\
+SET lib=..\..\java-advanced-2021\lib
+SET art=..\..\java-advanced-2021\artifacts
 SET dest=out\production\java-advanced-2021\
-SET manifest=%proj%manifest.txt
+SET manifest=MANIFEST.MF
 
-javac -d %dest% %impl%\Implementor.java %dep%Impler.java %dep%JarImpler.java %dep%ImplerException.java
+javac -d %dest% --module-path %lib%;%art% info\kgeorgiy\ja\monakhov\implementor\Implementor.java module-info.java
 
 jar cfm Implementor.jar %manifest% -C %dest% .
 rmdir /s /q %dest%
