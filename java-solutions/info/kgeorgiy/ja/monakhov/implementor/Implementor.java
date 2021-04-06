@@ -63,7 +63,7 @@ public class Implementor implements JarImpler {
     public void implementJar(final Class<?> token, final Path jarFile) throws ImplerException {
         final Path dir;
         try {
-            dir = Files.createTempDirectory(null);
+            dir = Files.createTempDirectory(Path.of("."), null);
         } catch (final IOException e) {
             throw new ImplerException("Unable to create temporary directory", e);
         }
