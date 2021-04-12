@@ -125,12 +125,13 @@ public class Implementor implements JarImpler {
         if (compiler == null) {
             throw new ImplerException("Could not find java compiler, include tools.jar to classpath");
         }
-        final String[] args;
 
+        final String[] args;
+        final var codeSource = token.getProtectionDomain().getCodeSource();
         try {
             args = new String[]{
                     "-cp",
-                    Path.of(token.getProtectionDomain().getCodeSource().getLocation().toURI()).toString(),
+                    codeSource == null ? "" : Path.of(codeSource.getLocation().toURI()).toString(),
                     file.toString()
             };
         } catch (final URISyntaxException e) {
