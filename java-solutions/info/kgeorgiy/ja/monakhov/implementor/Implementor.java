@@ -125,15 +125,24 @@ public class Implementor implements JarImpler {
         if (compiler == null) {
             throw new ImplerException("Could not find java compiler, include tools.jar to classpath");
         }
-
         final String[] args;
         final var codeSource = token.getProtectionDomain().getCodeSource();
+
+
         try {
-            args = new String[]{
-                    "-cp",
-                    codeSource == null ? "" : Path.of(codeSource.getLocation().toURI()).toString(),
-                    file.toString()
-            };
+            if (codeSource == null) {
+                args = new String[]{
+                        "--patch-module",
+                        token.getModule().getName() + "=" + file.getParent().toString(),
+                        file.toString()
+                };
+            } else {
+                args = new String[]{
+                        "-cp",
+                        Path.of(codeSource.getLocation().toURI()).toString(),
+                        file.toString()
+                };
+            }
         } catch (final URISyntaxException e) {
             throw new ImplerException("Unable to access dependencies directory", e);
         }
@@ -141,7 +150,6 @@ public class Implementor implements JarImpler {
         if (compiler.run(null, null, null, args) != 0) {
             throw new ImplerException("Generated class doesn't compile");
         }
-
     }
 
     /**
