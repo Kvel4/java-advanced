@@ -36,6 +36,9 @@ public class IterativeParallelism implements ListIP {
         final List<List<? extends T>> args = new ArrayList<>();
         for (int i = 0; i < activeThreads; i++) {
             final int from = batchSize * i;
+            // 6 6 6 2
+            // 5 5 5 5
+            // :NOTE: not fair distribution
             final int to = i == activeThreads - 1 ? values.size() : batchSize * (i + 1);
             args.add(values.subList(from, to));
         }
@@ -44,6 +47,7 @@ public class IterativeParallelism implements ListIP {
             final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
             final Thread handler = newHandlerThread(activeThreads, converter, args, result);
             handler.start();
+            // :NOTE: you create an extra thread
             return collector.apply(result.getResult());
         } else {
             return collector.apply(mapper.map(converter, args));
