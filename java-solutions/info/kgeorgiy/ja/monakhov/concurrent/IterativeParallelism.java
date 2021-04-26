@@ -42,7 +42,7 @@ public class IterativeParallelism implements ListIP {
 
         if (mapper == null) {
             final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
-            final Thread handler = newHandlerThread(converter, activeThreads, args, result);
+            final Thread handler = newHandlerThread(activeThreads, converter, args, result);
             handler.start();
             return collector.apply(result.getResult());
         } else {
@@ -53,30 +53,27 @@ public class IterativeParallelism implements ListIP {
 
     @Override
     public <T> T maximum(final int threads, final List<? extends T> values, final Comparator<? super T> comparator) throws InterruptedException {
+        final Function<List<? extends T>, T> max = list -> Collections.max(list, comparator);
         return parallelOperation(threads, values,
-                list -> Collections.max(list, comparator),
-                list -> Collections.max(list, comparator));
+                max,
+                max);
     }
 
     @Override
     public <T> T minimum(final int threads, final List<? extends T> values, final Comparator<? super T> comparator) throws InterruptedException {
-        return parallelOperation(threads, values,
-                list -> Collections.min(list, comparator),
-                list -> Collections.min(list, comparator));
+        return maximum(threads, values, comparator.reversed());
     }
 
     @Override
     public <T> boolean all(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
         return parallelOperation(threads, values,
                 list -> list.stream().allMatch(predicate),
-                list -> list.stream().allMatch(el -> el == true));
+                list -> list.stream().allMatch(Boolean::booleanValue));
     }
 
     @Override
     public <T> boolean any(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
-        return parallelOperation(threads, values,
-                list -> list.stream().anyMatch(predicate),
-                list -> list.stream().anyMatch(el -> el == true));
+        return !all(threads, values, predicate.negate());
     }
 
     @Override
