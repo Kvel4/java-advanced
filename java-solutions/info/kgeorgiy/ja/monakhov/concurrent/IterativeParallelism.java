@@ -9,7 +9,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static info.kgeorgiy.ja.monakhov.concurrent.IterativeUtils.newHandlerThread;
+import static info.kgeorgiy.ja.monakhov.concurrent.IterativeUtils.newHandler;
 
 public class IterativeParallelism implements ListIP {
     private final ParallelMapper mapper;
@@ -28,25 +28,22 @@ public class IterativeParallelism implements ListIP {
                                        final Function<List<? extends R>, R> collector)
             throws InterruptedException {
         final int size = values.size();
+        final int batchSize = size / threads;
+        int mod = size % threads;
         final int activeThreads = Math.min(threads, size);
-        int batchSize = (size + (activeThreads - 1)) / activeThreads;
 
-        if ((activeThreads - 1) * batchSize >= size) batchSize -= 1;
-
+        int from = 0, to = 0;
         final List<List<? extends T>> args = new ArrayList<>();
         for (int i = 0; i < activeThreads; i++) {
-            final int from = batchSize * i;
-            // 6 6 6 2
-            // 5 5 5 5
             // :NOTE: not fair distribution
-            final int to = i == activeThreads - 1 ? values.size() : batchSize * (i + 1);
+            from = to;
+            to = from + batchSize + (mod-- > 0 ? 1 : 0);
             args.add(values.subList(from, to));
         }
 
         if (mapper == null) {
             final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
-            final Thread handler = newHandlerThread(activeThreads, converter, args, result);
-            handler.start();
+            newHandler(activeThreads, converter, args, result).run();
             // :NOTE: you create an extra thread
             return collector.apply(result.getResult());
         } else {
