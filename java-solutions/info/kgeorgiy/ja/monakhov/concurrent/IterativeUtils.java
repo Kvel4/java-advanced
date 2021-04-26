@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public class IterativeUtils {
-    public static <T,R> Thread newHandlerThread(final Function<? super T, ? extends R> f,
-                                                final int threadsNumber,
+    public static <T,R> Thread newHandlerThread(final int threadsNumber,
+                                                final Function<? super T, ? extends R> f,
                                                 final List<? extends T> args,
                                                 final ResultWrapper<R> result) {
         return new Thread(() -> {
