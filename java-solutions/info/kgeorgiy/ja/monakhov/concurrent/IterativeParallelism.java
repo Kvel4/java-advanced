@@ -2,14 +2,12 @@ package info.kgeorgiy.ja.monakhov.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.ListIP;
 import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
-import info.kgeorgiy.ja.monakhov.concurrent.IterativeUtils.*;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static info.kgeorgiy.ja.monakhov.concurrent.IterativeUtils.newHandler;
 
 public class IterativeParallelism implements ListIP {
     private final ParallelMapper mapper;
@@ -42,28 +40,28 @@ public class IterativeParallelism implements ListIP {
         }
 
         if (mapper == null) {
-            final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
-            newHandler(activeThreads, converter, args, result).run();
+//            final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
+//            newHandler(activeThreads, converter, args, result).run();
             //:NOTE: you create an extra thread
-            return collector.apply(result.getResult());
-//            final List<R> result = new ArrayList<>(Collections.nCopies(activeThreads, null));
-//            final Thread[] workers = new Thread[activeThreads];
-//            for (int i = 0; i < activeThreads; i++) {
-//                final int finalI = i;
-//                workers[i] = new Thread(() -> result.set(finalI, converter.apply(args.get(finalI))));
-//                workers[i].start();
-//            }
-//
-//            try {
-//                for (int i = 0; i < activeThreads; i++) {
-//                    workers[i].join();
-//                }
-//            } catch (final InterruptedException e) {
-//                for (int i = 0; i < activeThreads; i++) {
-//                    workers[i].interrupt();
-//                }
-//            }
-//            return collector.apply(result);
+//            return collector.apply(result.getResult());
+            final List<R> result = new ArrayList<>(Collections.nCopies(activeThreads, null));
+            final Thread[] workers = new Thread[activeThreads];
+            for (int i = 0; i < activeThreads; i++) {
+                final int finalI = i;
+                workers[i] = new Thread(() -> result.set(finalI, converter.apply(args.get(finalI))));
+                workers[i].start();
+            }
+
+            try {
+                for (int i = 0; i < activeThreads; i++) {
+                    workers[i].join();
+                }
+            } catch (final InterruptedException e) {
+                for (int i = 0; i < activeThreads; i++) {
+                    workers[i].interrupt();
+                }
+            }
+            return collector.apply(result);
         } else {
             return collector.apply(mapper.map(converter, args));
         }
