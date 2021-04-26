@@ -28,24 +28,42 @@ public class IterativeParallelism implements ListIP {
                                        final Function<List<? extends R>, R> collector)
             throws InterruptedException {
         final int size = values.size();
-        final int batchSize = size / threads;
-        int mod = size % threads;
         final int activeThreads = Math.min(threads, size);
+        final int batchSize = size / activeThreads;
+        int remainder = size % activeThreads;
 
-        int from = 0, to = 0;
+        int to = 0, from = 0;
         final List<List<? extends T>> args = new ArrayList<>();
         for (int i = 0; i < activeThreads; i++) {
             // :NOTE: not fair distribution
             from = to;
-            to = from + batchSize + (mod-- > 0 ? 1 : 0);
+            to = from + batchSize + (remainder-- > 0 ? 1 : 0);
             args.add(values.subList(from, to));
         }
 
         if (mapper == null) {
             final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
             newHandler(activeThreads, converter, args, result).run();
-            // :NOTE: you create an extra thread
+            //:NOTE: you create an extra thread
             return collector.apply(result.getResult());
+//            final List<R> result = new ArrayList<>(Collections.nCopies(activeThreads, null));
+//            final Thread[] workers = new Thread[activeThreads];
+//            for (int i = 0; i < activeThreads; i++) {
+//                final int finalI = i;
+//                workers[i] = new Thread(() -> result.set(finalI, converter.apply(args.get(finalI))));
+//                workers[i].start();
+//            }
+//
+//            try {
+//                for (int i = 0; i < activeThreads; i++) {
+//                    workers[i].join();
+//                }
+//            } catch (final InterruptedException e) {
+//                for (int i = 0; i < activeThreads; i++) {
+//                    workers[i].interrupt();
+//                }
+//            }
+//            return collector.apply(result);
         } else {
             return collector.apply(mapper.map(converter, args));
         }

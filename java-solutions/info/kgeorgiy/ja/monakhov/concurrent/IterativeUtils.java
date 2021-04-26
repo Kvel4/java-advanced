@@ -6,24 +6,26 @@ import java.util.List;
 import java.util.function.Function;
 
 public class IterativeUtils {
-    public static <T,R> Thread newHandlerThread(final int threadsNumber,
-                                                final Function<? super T, ? extends R> f,
-                                                final List<? extends T> args,
-                                                final ResultWrapper<R> result) {
-        return new Thread(() -> {
+    public static <T,R> Runnable newHandler(final int threadsNumber,
+                                            final Function<? super T, ? extends R> f,
+                                            final List<? extends T> args,
+                                            final ResultWrapper<R> result) {
+        return () -> {
             final int size = args.size();
             final int activeThreads = Math.min(threadsNumber, size);
-            final Thread[] threads = new Thread[threadsNumber];
-            int batchSize = (size + (activeThreads - 1)) / activeThreads;
+            final Thread[] threads = new Thread[activeThreads];
+            final int batchSize = size / activeThreads;
+            int remainder = size % activeThreads;
 
-            if ((activeThreads - 1) * batchSize >= size) batchSize -= 1;
-
+            int from = 0, to = 0;
             for (int i = 0; i < activeThreads; i++) {
-                final int from = batchSize * i;
-                final int to = i == activeThreads - 1 ? args.size() : batchSize * (i + 1);
+                from = to;
+                to = from + batchSize + (remainder-- > 0 ? 1 : 0);
 
+                final int finalFrom = from;
+                final int finalTo = to;
                 threads[i] = new Thread(() -> {
-                    for (int j = from; j < to; j++) {
+                    for (int j = finalFrom; j < finalTo; j++) {
                         if (Thread.interrupted()) return;
                         result.set(j, f.apply(args.get(j)));
                     }
@@ -39,8 +41,13 @@ public class IterativeUtils {
                 for (int i = 0; i < activeThreads; i++) {
                     threads[i].interrupt();
                 }
+                for (int i = 0; i < activeThreads; i++) {
+                    try {
+                        threads[i].join();
+                    } catch (final InterruptedException ignored) { }
+                }
             }
-        });
+        };
     }
 
     public static class ResultWrapper<R> {
