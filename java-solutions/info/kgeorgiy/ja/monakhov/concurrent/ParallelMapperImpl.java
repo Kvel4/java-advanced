@@ -47,7 +47,7 @@ public class ParallelMapperImpl implements ParallelMapper {
         final ResultWrapper<R> resultWrapper = new ResultWrapper<>(args.size());
 
         synchronized (queue) {
-            queue.add(newHandlerThread(f, threadsNumber, args, resultWrapper));
+            queue.add(newHandlerThread(threadsNumber, f, args, resultWrapper));
             queue.notify();
         }
 
