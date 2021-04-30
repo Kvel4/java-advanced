@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class IterativeParallelism implements ListIP {
@@ -30,24 +31,19 @@ public class IterativeParallelism implements ListIP {
         final int batchSize = size / activeThreads;
         int remainder = size % activeThreads;
 
-        int to = 0, from = 0;
+        int from = 0, to = 0;
         final List<List<? extends T>> args = new ArrayList<>();
         for (int i = 0; i < activeThreads; i++) {
-            // :NOTE: not fair distribution
             from = to;
             to = from + batchSize + (remainder-- > 0 ? 1 : 0);
             args.add(values.subList(from, to));
         }
 
         if (mapper == null) {
-//            final ResultWrapper<R> result = new ResultWrapper<>(activeThreads);
-//            newHandler(activeThreads, converter, args, result).run();
-            //:NOTE: you create an extra thread
-//            return collector.apply(result.getResult());
             final List<R> result = new ArrayList<>(Collections.nCopies(activeThreads, null));
             final Thread[] workers = new Thread[activeThreads];
             for (int i = 0; i < activeThreads; i++) {
-                final int finalI = i;
+                final int finalI = i;x
                 workers[i] = new Thread(() -> result.set(finalI, converter.apply(args.get(finalI))));
                 workers[i].start();
             }
@@ -57,9 +53,8 @@ public class IterativeParallelism implements ListIP {
                     workers[i].join();
                 }
             } catch (final InterruptedException e) {
-                for (int i = 0; i < activeThreads; i++) {
-                    workers[i].interrupt();
-                }
+                ThreadsUtils.waitForInterruption(workers);
+                throw e;
             }
             return collector.apply(result);
         } else {
@@ -70,10 +65,9 @@ public class IterativeParallelism implements ListIP {
 
     @Override
     public <T> T maximum(final int threads, final List<? extends T> values, final Comparator<? super T> comparator) throws InterruptedException {
+        if (values.isEmpty()) throw new NoSuchElementException("Values can't be empty");
         final Function<List<? extends T>, T> max = list -> Collections.max(list, comparator);
-        return parallelOperation(threads, values,
-                max,
-                max);
+        return parallelOperation(threads, values, max, max);
     }
 
     @Override
@@ -83,6 +77,7 @@ public class IterativeParallelism implements ListIP {
 
     @Override
     public <T> boolean all(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
+        if (values.isEmpty()) return true;
         return parallelOperation(threads, values,
                 list -> list.stream().allMatch(predicate),
                 list -> list.stream().allMatch(Boolean::booleanValue));
@@ -95,6 +90,7 @@ public class IterativeParallelism implements ListIP {
 
     @Override
     public String join(final int threads, final List<?> values) throws InterruptedException {
+        if (values.isEmpty()) return "";
         return parallelOperation(threads, values,
                 list -> list.stream().map(Object::toString).collect(Collectors.joining("")),
                 list -> String.join("", list));
@@ -102,15 +98,18 @@ public class IterativeParallelism implements ListIP {
 
     @Override
     public <T> List<T> filter(final int threads, final List<? extends T> values, final Predicate<? super T> predicate) throws InterruptedException {
-        return parallelOperation(threads, values,
-                list -> list.stream().filter(predicate).collect(Collectors.toList()),
-                list -> list.stream().flatMap(Collection::stream).collect(Collectors.toList()));
+        return listOperation(threads, values, stream -> stream.filter(predicate));
     }
 
     @Override
     public <T, U> List<U> map(final int threads, final List<? extends T> values, final Function<? super T, ? extends U> f) throws InterruptedException {
+        return listOperation(threads, values, stream -> stream.map(f));
+    }
+
+    private <T, U> List<U> listOperation(final int threads, final List<? extends T> values, final Function<Stream<? extends T>, Stream<? extends U>> f) throws InterruptedException {
+        if (values.isEmpty()) return new ArrayList<>();
         return parallelOperation(threads, values,
-                list -> list.stream().map(f).collect(Collectors.toList()),
+                list -> f.apply(list.stream()).collect(Collectors.toList()),
                 list -> list.stream().flatMap(Collection::stream).collect(Collectors.toList()));
     }
 }

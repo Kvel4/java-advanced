@@ -1,46 +1,37 @@
 package info.kgeorgiy.ja.monakhov.concurrent;
 
+import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
+
 import java.util.*;
 import java.util.function.Function;
 
-import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
-import info.kgeorgiy.ja.monakhov.concurrent.IterativeUtils.*;
-
-import static info.kgeorgiy.ja.monakhov.concurrent.IterativeUtils.newHandler;
 
 public class ParallelMapperImpl implements ParallelMapper {
-    private final Queue<Thread> queue = new ArrayDeque<>();
-    private final Thread extractor;
-    private final int threadsNumber;
+    private final Queue<Runnable> queue = new ArrayDeque<>();
+    private final int MAX_SIZE = 1_000_000;
+    private final Thread[] threads;
 
     public ParallelMapperImpl(final int threadsNumber) {
-        this.threadsNumber = threadsNumber;
+        threads = new Thread[threadsNumber];
 
-        extractor = new Thread(() -> {
-            while (true) {
-                final Thread handler;
-                synchronized (queue) {
-                    while (queue.size() == 0) {
+        for (int i = 0; i < threadsNumber; i++) {
+            threads[i] = new Thread(() -> {
+                Runnable task;
+                while (!Thread.interrupted()) {
+                    synchronized (queue) {
                         try {
-                            queue.wait();
+                            while (queue.isEmpty()) queue.wait();
                         } catch (final InterruptedException e) {
                             return;
                         }
+                        task = queue.poll();
+                        queue.notifyAll();
                     }
-                    handler = queue.poll();
+                    task.run();
                 }
-                handler.start();
-                try {
-                    handler.join();
-                } catch (final InterruptedException e) {
-                    handler.interrupt();
-                    try {
-                        handler.join();
-                    } catch (final InterruptedException ignored) { }
-                }
-            }
-        });
-        extractor.start();
+            });
+            threads[i].start();
+        }
     }
 
     @Override
@@ -48,8 +39,14 @@ public class ParallelMapperImpl implements ParallelMapper {
         final ResultWrapper<R> resultWrapper = new ResultWrapper<>(args.size());
 
         synchronized (queue) {
-            queue.add(new Thread(newHandler(threadsNumber, f, args, resultWrapper)));
-            queue.notify();
+            for (int i = 0; i < args.size(); i++) {
+                while (queue.size() == MAX_SIZE) {
+                    queue.wait();
+                }
+                final int finalI = i;
+                queue.add(() -> resultWrapper.set(finalI, f.apply(args.get(finalI))));
+                queue.notifyAll();
+            }
         }
 
         return resultWrapper.getResult();
@@ -57,6 +54,30 @@ public class ParallelMapperImpl implements ParallelMapper {
 
     @Override
     public synchronized void close() {
-        extractor.interrupt();
+        ThreadsUtils.waitForInterruption(threads);
+    }
+
+    public static class ResultWrapper<R> {
+        private final List<R> result;
+        private int cnt;
+
+        public ResultWrapper(final int length) {
+            this.result = new ArrayList<>(Collections.nCopies(length, null));
+            cnt = 0;
+        }
+
+        public synchronized void set(final int i, final R el) {
+            result.set(i, el);
+            if (++cnt == result.size()) {
+                notify();
+            }
+        }
+
+        public synchronized List<R> getResult() throws InterruptedException {
+            while (cnt != result.size()) {
+                wait();
+            }
+            return result;
+        }
     }
 }
