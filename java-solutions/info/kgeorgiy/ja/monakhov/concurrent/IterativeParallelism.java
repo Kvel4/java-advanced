@@ -43,7 +43,7 @@ public class IterativeParallelism implements ListIP {
             final List<R> result = new ArrayList<>(Collections.nCopies(activeThreads, null));
             final Thread[] workers = new Thread[activeThreads];
             for (int i = 0; i < activeThreads; i++) {
-                final int finalI = i;x
+                final int finalI = i;
                 workers[i] = new Thread(() -> result.set(finalI, converter.apply(args.get(finalI))));
                 workers[i].start();
             }
