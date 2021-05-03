@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 public class ParallelMapperImpl implements ParallelMapper {
     private final Queue<Runnable> queue = new ArrayDeque<>();
-    private final int MAX_SIZE = 1_000_000;
+    private static final int MAX_SIZE = 1_000_000;
     private final Thread[] threads;
 
     public ParallelMapperImpl(final int threadsNumber) {
@@ -38,6 +38,7 @@ public class ParallelMapperImpl implements ParallelMapper {
     public <T, R> List<R> map(final Function<? super T, ? extends R> f, final List<? extends T> args) throws InterruptedException {
         final ResultWrapper<R> resultWrapper = new ResultWrapper<>(args.size());
 
+        // :NOTE: too wide of a synchronize
         synchronized (queue) {
             for (int i = 0; i < args.size(); i++) {
                 while (queue.size() == MAX_SIZE) {
