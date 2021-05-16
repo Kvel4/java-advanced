@@ -35,19 +35,20 @@ public class WebCrawler implements Crawler {
         downloaderService.shutdown();
         extractorService.shutdown();
         try {
-            if (!downloaderService.awaitTermination(10, TimeUnit.SECONDS)){
-                downloaderService.shutdownNow();
-                if (!downloaderService.awaitTermination(10, TimeUnit.SECONDS)) {
-                    System.err.println("DownloaderService isn't shutdown");
-                }
-            }
-            if (!extractorService.awaitTermination(10, TimeUnit.SECONDS)) {
-                System.err.println("ExtractorService isn't shutdown");
-            }
-
+            awaitShutdown(downloaderService, "DownloaderService isn't shutdown");
+            awaitShutdown(extractorService, "ExtractorService isn't shutdown");
         } catch (final InterruptedException e) {
             downloaderService.shutdownNow();
             extractorService.shutdownNow();
+        }
+    }
+
+    private void awaitShutdown(final ExecutorService service, final String message) throws InterruptedException {
+        if (!service.awaitTermination(10, TimeUnit.SECONDS)) {
+            service.shutdownNow();
+            if (!service.awaitTermination(2, TimeUnit.SECONDS)) {
+                System.err.println(message);
+            }
         }
     }
 
