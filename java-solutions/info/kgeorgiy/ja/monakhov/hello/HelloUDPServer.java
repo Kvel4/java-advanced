@@ -7,7 +7,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +24,13 @@ public class HelloUDPServer implements HelloServer {
         } catch (final SocketException e) {
             System.err.println("Unable to start socket on provided port: " + e.getMessage());
         }
+    }
+
+    public static void main(final String[] args) throws IllegalArgumentException {
+        if (args == null || args.length != 2 || Arrays.stream(args).anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("You must pass 2 arguments: port threads");
+        }
+        new HelloUDPServer().start(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
     }
 
     @Override
