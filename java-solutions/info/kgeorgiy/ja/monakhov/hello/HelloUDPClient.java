@@ -69,13 +69,20 @@ public class HelloUDPClient implements HelloClient {
                         final DatagramPacket request = HelloUtils.newRequestDatagramPacket(host, port, bufferSize);
                         final DatagramPacket response = HelloUtils.newResponseDatagramPacket(bufferSize);
                         request.setData(generateBody(i, j));
+                        final String requestBody = HelloUtils.getBody(request);
                         while (!socket.isClosed()) {
-                            if (Thread.interrupted()) return;
+                            if (Thread.interrupted()) {
+                                socket.close();
+                                return;
+                            }
                             try {
                                 socket.send(request);
                                 socket.receive(response);
-                                System.out.println(HelloUtils.getBody(response));
-                                break;
+                                final String responseBody = HelloUtils.getBody(response);
+                                if (isValid(requestBody, responseBody)) {
+                                    System.out.println(responseBody);
+                                    break;
+                                }
                             } catch (final IOException e) {
                                 System.err.println(e.getMessage() + ". Resending");
                             }
@@ -87,6 +94,10 @@ public class HelloUDPClient implements HelloClient {
             } catch (final SocketException e) {
                 System.err.println("Unable to create socket: " + e.getMessage());
             }
+        }
+
+        private boolean isValid(final String requestBody, final String responseBody) {
+            return responseBody.contains(requestBody);
         }
 
         private byte[] generateBody(final int thread, final int request) {
