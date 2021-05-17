@@ -83,6 +83,7 @@ public class HelloUDPClient implements HelloClient {
                                     System.out.println(responseBody);
                                     break;
                                 }
+                                System.err.println("Incorrect response. Resending");
                             } catch (final IOException e) {
                                 System.err.println(e.getMessage() + ". Resending");
                             }
