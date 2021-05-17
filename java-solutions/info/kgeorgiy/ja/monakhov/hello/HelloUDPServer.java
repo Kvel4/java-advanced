@@ -40,9 +40,7 @@ public class HelloUDPServer implements HelloServer {
 
     private static class PortHandler implements AutoCloseable {
         private final ExecutorService executor;
-
         private final DatagramSocket socket;
-
         private final int bufferSize;
 
         public PortHandler(final int port, final int threads) throws SocketException {
@@ -67,7 +65,7 @@ public class HelloUDPServer implements HelloServer {
             }
         }
 
-        private void writeResponse(final DatagramPacket packet) {
+        private static void writeResponse(final DatagramPacket packet) {
             final String response = "Hello, " + HelloUtils.getBody(packet);
             packet.setData(HelloUtils.toBytes(response));
         }

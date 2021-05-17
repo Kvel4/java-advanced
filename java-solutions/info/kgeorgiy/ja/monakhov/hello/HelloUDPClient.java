@@ -46,11 +46,13 @@ public class HelloUDPClient implements HelloClient {
         }
 
         public void run() throws InterruptedException {
+            // :NOTE: IntStream
             for (int i = 0; i < threads; i++) {
                 final int finalI = i;
                 executor.submit(() -> sendAndReceive(finalI));
             }
 
+            // :NOTE: Не дождались
             executor.shutdown();
             if (!executor.awaitTermination((long) threads * requests, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
@@ -66,6 +68,7 @@ public class HelloUDPClient implements HelloClient {
 
                 try {
                     for (int j = 0; j < requests; j++) {
+                        // :NOTE: Новые?
                         final DatagramPacket request = HelloUtils.newRequestDatagramPacket(host, port, bufferSize);
                         final DatagramPacket response = HelloUtils.newResponseDatagramPacket(bufferSize);
                         request.setData(generateBody(i, j));
@@ -97,7 +100,7 @@ public class HelloUDPClient implements HelloClient {
             }
         }
 
-        private boolean isValid(final String requestBody, final String responseBody) {
+        private static boolean isValid(final String requestBody, final String responseBody) {
             return responseBody.contains(requestBody);
         }
 
