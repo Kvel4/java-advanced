@@ -40,7 +40,9 @@ public class HelloUDPServer implements HelloServer {
 
     private static class PortHandler implements AutoCloseable {
         private final ExecutorService executor;
+
         private final DatagramSocket socket;
+
         private final int bufferSize;
 
         public PortHandler(final int port, final int threads) throws SocketException {
@@ -56,18 +58,18 @@ public class HelloUDPServer implements HelloServer {
 
         private void listen() {
             while (!socket.isClosed() && !Thread.interrupted()) {
-                final DatagramPacket packet = HelloUtils.newResponseDatagramPacket(bufferSize);
+                final DatagramPacketWrapper packet = new DatagramPacketWrapper(bufferSize);
                 try {
-                    socket.receive(packet);
+                    socket.receive(packet.getPacket());
                     writeResponse(packet);
-                    socket.send(packet);
+                    socket.send(packet.getPacket());
                 } catch (final IOException ignored) { }
             }
         }
 
-        private static void writeResponse(final DatagramPacket packet) {
-            final String response = "Hello, " + HelloUtils.getBody(packet);
-            packet.setData(HelloUtils.toBytes(response));
+        private void writeResponse(final DatagramPacketWrapper packet) {
+            final String response = "Hello, " + packet.getData();
+            packet.setData(response);
         }
 
         @Override

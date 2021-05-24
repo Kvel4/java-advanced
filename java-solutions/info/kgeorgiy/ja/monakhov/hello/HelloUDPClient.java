@@ -9,15 +9,12 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 public class HelloUDPClient implements HelloClient {
     @Override
     public void run(final String host, final int port, final String prefix, final int threads, final int requests) {
-        try {
-            new Sender(host, port, prefix, threads, requests).run();
-        } catch (final InterruptedException e) {
-            System.err.println("Execution was interrupted: " + e.getMessage());
-        }
+        new Sender(host, port, prefix, threads, requests).run();
     }
 
     public static void main(final String[] args) throws IllegalArgumentException {
@@ -45,45 +42,44 @@ public class HelloUDPClient implements HelloClient {
             this.requests = requests;
         }
 
-        public void run() throws InterruptedException {
+        public void run() {
             // :NOTE: IntStream
-            for (int i = 0; i < threads; i++) {
-                final int finalI = i;
-                executor.submit(() -> sendAndReceive(finalI));
-            }
+            IntStream.range(0, threads).forEach(i -> executor.submit(() -> sendAndReceive(i)));
+
 
             // :NOTE: Не дождались
             executor.shutdown();
-            if (!executor.awaitTermination((long) threads * requests, TimeUnit.SECONDS)) {
+            try {
+                while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS));
+            } catch (final InterruptedException e) {
                 executor.shutdownNow();
-                System.err.println("Resend time exceeded. Unable to process all requests");
+                System.err.println("Execution was interrupted: " + e.getMessage());
             }
         }
 
 
         private void sendAndReceive(final int i) {
             try (final DatagramSocket socket = new DatagramSocket()) {
-                final int bufferSize = socket.getReceiveBufferSize();
+                final int receiveBuffer = socket.getReceiveBufferSize();
+                final int sendBuffer = socket.getSendBufferSize();
                 socket.setSoTimeout(100);
 
                 try {
+                    // :NOTE: Новые?
+                    final DatagramPacketWrapper packet = new DatagramPacketWrapper(host, port, sendBuffer);
                     for (int j = 0; j < requests; j++) {
-                        // :NOTE: Новые?
-                        final DatagramPacket request = HelloUtils.newRequestDatagramPacket(host, port, bufferSize);
-                        final DatagramPacket response = HelloUtils.newResponseDatagramPacket(bufferSize);
-                        request.setData(generateBody(i, j));
-                        final String requestBody = HelloUtils.getBody(request);
+                        final String request = generateRequest(i, j);
                         while (!socket.isClosed()) {
-                            if (Thread.interrupted()) {
-                                socket.close();
-                                return;
-                            }
+                            if (Thread.interrupted()) { return; }
                             try {
-                                socket.send(request);
-                                socket.receive(response);
-                                final String responseBody = HelloUtils.getBody(response);
-                                if (isValid(requestBody, responseBody)) {
-                                    System.out.println(responseBody);
+                                packet.setData(request);
+                                socket.send(packet.getPacket());
+                                packet.setData(new byte[receiveBuffer]);
+                                socket.receive(packet.getPacket());
+
+                                final String response = packet.getData();
+                                if (isValid(request, response)) {
+                                    System.out.println(response);
                                     break;
                                 }
                                 System.err.println("Incorrect response. Resending");
@@ -104,8 +100,8 @@ public class HelloUDPClient implements HelloClient {
             return responseBody.contains(requestBody);
         }
 
-        private byte[] generateBody(final int thread, final int request) {
-            return HelloUtils.toBytes(prefix + thread + "_" + request);
+        private String generateRequest(final int thread, final int request) {
+            return prefix + thread + "_" + request;
         }
     }
 }
