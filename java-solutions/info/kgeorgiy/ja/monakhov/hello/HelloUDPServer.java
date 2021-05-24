@@ -3,7 +3,6 @@ package info.kgeorgiy.ja.monakhov.hello;
 import info.kgeorgiy.java.advanced.hello.HelloServer;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -57,7 +56,9 @@ public class HelloUDPServer implements HelloServer {
         }
 
         private void listen() {
+
             while (!socket.isClosed() && !Thread.interrupted()) {
+                // :NOTE: Переиспользование
                 final DatagramPacketWrapper packet = new DatagramPacketWrapper(bufferSize);
                 try {
                     socket.receive(packet.getPacket());

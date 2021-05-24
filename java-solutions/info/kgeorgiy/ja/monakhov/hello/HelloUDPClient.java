@@ -25,6 +25,7 @@ public class HelloUDPClient implements HelloClient {
     }
 
     private static class Sender {
+        public static final int TIMEOUT = 100;
         private final ExecutorService executor;
 
         private final String prefix;
@@ -43,54 +44,53 @@ public class HelloUDPClient implements HelloClient {
         }
 
         public void run() {
-            // :NOTE: IntStream
             IntStream.range(0, threads).forEach(i -> executor.submit(() -> sendAndReceive(i)));
 
 
-            // :NOTE: Не дождались
             executor.shutdown();
             try {
-                while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS));
+                while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS)) {
+                    // :NOTE: logging
+                }
             } catch (final InterruptedException e) {
                 executor.shutdownNow();
                 System.err.println("Execution was interrupted: " + e.getMessage());
             }
         }
 
-
-        private void sendAndReceive(final int i) {
+        private void sendAndReceive(final int thread) {
             try (final DatagramSocket socket = new DatagramSocket()) {
-                final int receiveBuffer = socket.getReceiveBufferSize();
-                final int sendBuffer = socket.getSendBufferSize();
-                socket.setSoTimeout(100);
+                final int receiveBufferSize = socket.getReceiveBufferSize();
+                final int sendBufferSize = socket.getSendBufferSize();
+                socket.setSoTimeout(TIMEOUT);
 
-                try {
-                    // :NOTE: Новые?
-                    final DatagramPacketWrapper packet = new DatagramPacketWrapper(host, port, sendBuffer);
-                    for (int j = 0; j < requests; j++) {
-                        final String request = generateRequest(i, j);
-                        while (!socket.isClosed()) {
-                            if (Thread.interrupted()) { return; }
-                            try {
-                                packet.setData(request);
-                                socket.send(packet.getPacket());
-                                packet.setData(new byte[receiveBuffer]);
-                                socket.receive(packet.getPacket());
+                final DatagramPacketWrapper packet = new DatagramPacketWrapper(host, port, sendBufferSize);
+                for (int j = 0; j < requests; j++) {
+                    final String request = generateRequest(thread, j);
+                    while (!socket.isClosed()) {
+                        if (Thread.interrupted()) {
+                            return;
+                        }
+                        try {
+                            packet.setData(request);
+                            socket.send(packet.getPacket());
+                            // :NOTE: Новый массив
+                            packet.setData(new byte[receiveBufferSize]);
+                            socket.receive(packet.getPacket());
 
-                                final String response = packet.getData();
-                                if (isValid(request, response)) {
-                                    System.out.println(response);
-                                    break;
-                                }
-                                System.err.println("Incorrect response. Resending");
-                            } catch (final IOException e) {
-                                System.err.println(e.getMessage() + ". Resending");
+                            final String response = packet.getData();
+                            if (isValid(request, response)) {
+                                System.out.println(response);
+                                break;
                             }
+                            System.err.println("Incorrect response. Resending");
+                        } catch (final IOException e) {
+                            System.err.println(e.getMessage() + ". Resending");
                         }
                     }
-                } catch (final UnknownHostException e) {
-                    System.err.println("Unable to find host to make a request: " + e.getMessage());
                 }
+            } catch (final UnknownHostException e) {
+                System.err.println("Unable to find host to make a request: " + e.getMessage());
             } catch (final SocketException e) {
                 System.err.println("Unable to create socket: " + e.getMessage());
             }
