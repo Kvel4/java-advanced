@@ -142,8 +142,7 @@ public class HelloUDPNonblockingClient implements HelloClient {
         }
 
         private static boolean isValid(final String requestBody, final String responseBody) {
-            return responseBody.equals("Hello, " + requestBody);
-//            return responseBody.contains(requestBody);
+            return responseBody.contains(requestBody);
         }
 
         private static boolean isReadInterest(final SelectionKey key) {
