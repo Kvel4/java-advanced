@@ -11,6 +11,7 @@ public class DatagramPacketWrapper {
     public DatagramPacketWrapper(final int bufferSize) {
         packet = new DatagramPacket(new byte[bufferSize], bufferSize);
     }
+
     public DatagramPacketWrapper(final String host, final int port, final int bufferSize) throws UnknownHostException {
         packet = new DatagramPacket(new byte[bufferSize], bufferSize, InetAddress.getByName(host), port);
     }
@@ -18,6 +19,7 @@ public class DatagramPacketWrapper {
     public void setData(final byte[] buffer) {
         packet.setData(buffer);
     }
+
     public void setData(final String s) {
         packet.setData(s.getBytes(StandardCharsets.UTF_8));
     }

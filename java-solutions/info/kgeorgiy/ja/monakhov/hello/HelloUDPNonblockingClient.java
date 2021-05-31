@@ -11,25 +11,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 public class HelloUDPNonblockingClient implements HelloClient {
-    public static void main(final String[] args) throws IllegalArgumentException {
-        if (args == null || args.length != 5 || Arrays.stream(args).anyMatch(Objects::isNull)) {
-            System.err.println("You must pass 5 arguments: host port prefix threads requests");
-            return;
-        }
-        final int port = Integer.parseInt(args[1]);
-        if (port < 0 || port > 65535) {
-            System.err.println("Port must be between 0 and 65535");
-            return;
-        }
-        new HelloUDPClient().run(args[0], port, args[2], Integer.parseInt(args[3]), Integer.parseInt(args[4]));
-    }
-
     @Override
     public void run(final String host, final int port, final String prefix, final int threads, final int requests) {
         try {
@@ -37,6 +22,10 @@ public class HelloUDPNonblockingClient implements HelloClient {
         } catch (final IOException e) {
             System.err.println("Unable to open selector: " + e.getMessage());
         }
+    }
+
+    public static void main(final String[] args) {
+        HelloUtils.clientMain(new HelloUDPNonblockingClient(), args);
     }
 
     private static class Sender {

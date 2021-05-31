@@ -4,8 +4,6 @@ import info.kgeorgiy.java.advanced.hello.HelloClient;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -18,10 +16,7 @@ public class HelloUDPClient implements HelloClient {
     }
 
     public static void main(final String[] args) throws IllegalArgumentException {
-        if (args == null || args.length != 5 || Arrays.stream(args).anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("You must pass 5 arguments: host port prefix threads requests");
-        }
-        new HelloUDPClient().run(args[0], Integer.parseInt(args[1]), args[2], Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+        HelloUtils.clientMain(new HelloUDPClient(), args);
     }
 
     private static class Sender {

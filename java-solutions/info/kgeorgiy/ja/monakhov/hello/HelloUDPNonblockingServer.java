@@ -7,16 +7,12 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.net.SocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,10 +22,7 @@ public class HelloUDPNonblockingServer implements HelloServer {
     private final List<PortHandler> activeHandlers = new ArrayList<>();
 
     public static void main(final String[] args) throws IllegalArgumentException {
-        if (args == null || args.length != 2 || Arrays.stream(args).anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("You must pass 2 arguments: port threads");
-        }
-        new HelloUDPNonblockingServer().start(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+        HelloUtils.serverMain(new HelloUDPNonblockingServer(), args);
     }
 
     @Override
