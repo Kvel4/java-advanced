@@ -66,6 +66,7 @@ public class HelloUDPNonblockingClient implements HelloClient {
                 final AtomicBoolean isEmpty = new AtomicBoolean(true);
                 try {
                     selector.select(key -> {
+                        // :NOTE: Сразу создать false? И она вообще не меняется нигде, зачем она?
                         isEmpty.set(false);
                         try {
                             final Context context = (Context) key.attachment();

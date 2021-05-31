@@ -32,6 +32,7 @@ public class HelloUDPNonblockingServer implements HelloServer {
         } catch (final SocketException e) {
             System.err.println("Unable to start socket on provided port: " + e.getMessage());
         } catch (final IOException e) {
+            // :NOTE: e.getMessage
             System.err.println("Unable to open selector");
         }
     }
@@ -42,6 +43,7 @@ public class HelloUDPNonblockingServer implements HelloServer {
     }
 
     private static class PortHandler implements AutoCloseable {
+        // :NOTE: не константное значение капсом
         private final int QUEUE_CAPACITY;
 
         private final ExecutorService listener;
