@@ -21,8 +21,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class HelloUDPNonblockingServer implements HelloServer {
     private final List<PortHandler> activeHandlers = new ArrayList<>();
@@ -51,16 +49,15 @@ public class HelloUDPNonblockingServer implements HelloServer {
     }
 
     private static class PortHandler implements AutoCloseable {
-        private final static int BUFFER_SIZE = Math.max(SocketOptions.SO_SNDBUF, SocketOptions.SO_RCVBUF);
-        private final static long SELECT_TIMEOUT_MILLISECONDS = 100;
         private final int QUEUE_CAPACITY;
 
         private final ExecutorService listener;
         private final ExecutorService executor;
 
         private final SocketAddress address;
-
         private final Selector selector;
+
+        private final DatagramChannel channel;
 
         private final BufferManager bufferManager;
 
@@ -72,17 +69,18 @@ public class HelloUDPNonblockingServer implements HelloServer {
 
             address = new InetSocketAddress(port);
             selector = Selector.open();
-            bufferManager = new BufferManager();
+
+            channel = HelloUtils.newDatagramChannel();
+            channel.bind(address);
+            channel.register(selector, SelectionKey.OP_READ);
+
+            bufferManager = new BufferManager(HelloUtils.getBufferSize(channel.socket()));
 
             listener.submit(this::listen);
         }
 
         private void listen() {
-            try (final DatagramChannel channel = HelloUtils.newDatagramChannel()) {
-                channel.configureBlocking(false);
-                channel.bind(address);
-                channel.register(selector, SelectionKey.OP_READ);
-
+            try {
                 while (channel.isOpen() && !Thread.interrupted()) {
                     selector.select(key -> {
                         try {
@@ -112,12 +110,12 @@ public class HelloUDPNonblockingServer implements HelloServer {
                         } catch (final IOException e) {
                             throw new UncheckedIOException(e);
                         }
-                    }, SELECT_TIMEOUT_MILLISECONDS);
+                    }, HelloUtils.SELECT_TIMEOUT_MILLISECONDS);
                 }
             } catch (final IOException e) {
-                System.err.println("Unable to open datagram channel:" + e.getMessage());
+                System.err.println("IO error occurred while selection:" + e.getMessage());
             } catch (final UncheckedIOException e) {
-                System.err.println("Some errors occurred while reading/writing to datagram channel: " + e.getMessage());
+                System.err.println("IO error occurred while reading/writing to datagram channel: " + e.getMessage());
             }
         }
 
@@ -131,6 +129,11 @@ public class HelloUDPNonblockingServer implements HelloServer {
 
         @Override
         public void close() {
+            try {
+                channel.close();
+            } catch (final IOException e) {
+                System.err.println("Unable to close channel: " + e.getMessage());
+            }
             try {
                 selector.close();
             } catch (final IOException e) {
@@ -156,9 +159,9 @@ public class HelloUDPNonblockingServer implements HelloServer {
             private final ArrayBlockingQueue<ResponseBuffer> responseBuffers = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
             private final ArrayBlockingQueue<ByteBuffer> receiveBuffers = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 
-            public BufferManager() {
+            public BufferManager(final int bufferSize) {
                 for (int i = 0; i < QUEUE_CAPACITY; i++) {
-                    addReceiveBuffer(ByteBuffer.allocate(BUFFER_SIZE).put(HelloUtils.getBytes("Hello, ")));
+                    addReceiveBuffer(ByteBuffer.allocate(bufferSize).put(HelloUtils.getBytes("Hello, ")));
                 }
             }
 
